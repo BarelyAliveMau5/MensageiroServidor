@@ -35,6 +35,7 @@ import mensageiro.socket.Mensagem;
  * @author BarelyAliveMau5
  */
 public class ThreadCliente extends Thread {
+    private static final Logger LOGGER = Logger.getLogger(ThreadCliente.class.getName());
     private static int idIncremental;
     public Servidor server = null;
     public Socket socket = null;
@@ -58,7 +59,7 @@ public class ThreadCliente extends Thread {
             saida.flush();
         }
         catch (IOException ex) {
-            Logger.getGlobal().log(Level.SEVERE, null, ex);
+            LOGGER.log(Level.SEVERE, null, ex);
         }
     }
 
@@ -72,7 +73,7 @@ public class ThreadCliente extends Thread {
 
     @Override
     public void run() {
-        Logger.getGlobal().log(Level.INFO, "Thread {0} executando", ID);
+        LOGGER.log(Level.INFO, "Thread {0} executando", ID);
         executando = true;
         while (executando) {
             try {
@@ -80,11 +81,11 @@ public class ThreadCliente extends Thread {
                 server.lidar(ID, msg);
             }
             catch(IOException ex) {
-                Logger.getGlobal().log(Level.WARNING, ex.toString());
+                LOGGER.log(Level.WARNING, ex.toString());
                 server.remover(ID);
                 finish();
             } catch (ClassNotFoundException ex) {
-                Logger.getGlobal().log(Level.SEVERE, null, ex);
+                LOGGER.log(Level.SEVERE, null, ex);
             }
         }
     }

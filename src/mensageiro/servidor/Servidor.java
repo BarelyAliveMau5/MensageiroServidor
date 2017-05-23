@@ -35,6 +35,7 @@ import mensageiro.socket.Mensagem;
  * @author BarelyAliveMau5
  */
 public class Servidor implements Runnable {
+    private static final Logger LOGGER = Logger.getLogger(Servidor.class.getName());
     private ThreadCliente clientes[];
     private boolean executando;
     
@@ -57,14 +58,14 @@ public class Servidor implements Runnable {
         try {
             server = new ServerSocket(port);
             port = server.getLocalPort();
-            Logger.getGlobal().log(Level.INFO, "Servidor iniciado em {0}:{1}", 
-                    new Object[] { InetAddress.getLocalHost(), server.getLocalPort() });
+            LOGGER.log(Level.INFO, "Servidor iniciado em {0}:{1}", 
+                       new Object[] { InetAddress.getLocalHost(), server.getLocalPort() });
             iniciar();
         } catch (BindException ex) {
-            Logger.getGlobal().log(Level.SEVERE, "Porta já usada, impossivel continuar. finalizando");
+            LOGGER.log(Level.SEVERE, "Porta já usada, impossivel continuar. finalizando");
             System.exit(-1);
         } catch(IOException ex) {
-            Logger.getGlobal().log(Level.WARNING, null, ex);
+            LOGGER.log(Level.WARNING, null, ex);
         } 
     }
 
@@ -75,12 +76,11 @@ public class Servidor implements Runnable {
             try {
                 Socket sock = server.accept();
                 if (sock.isConnected()) {
-                    Logger.getGlobal()
-                            .log(Level.INFO, "Conexão aceita com cliente {0}",sock.getRemoteSocketAddress());
+                    LOGGER.log(Level.INFO, "Conexão aceita com cliente {0}",sock.getRemoteSocketAddress());
                     addThread(sock);
                 }
             } catch (IOException ex) {
-                Logger.getGlobal().log(Level.WARNING, "Erro ao aceitar conexão", ex);
+                LOGGER.log(Level.WARNING, "Erro ao aceitar conexão", ex);
             }
         }
     }
@@ -98,7 +98,7 @@ public class Servidor implements Runnable {
         int pos = acharCliente(ID);
         if (pos >= 0) {
             ThreadCliente toTerminate = clientes[pos];
-            Logger.getGlobal().log(Level.INFO, "Tirando cliente {0}", ID);
+            LOGGER.log(Level.INFO, "Tirando cliente {0}", ID);
             if (pos < numClientes-1) {
                 for (int i = pos+1; i < numClientes; i++) {
                     clientes[i-1] = clientes[i];
@@ -109,7 +109,7 @@ public class Servidor implements Runnable {
                 toTerminate.close();
             }
             catch(IOException ex) {
-                Logger.getGlobal().log(Level.WARNING, "Erro fechando thread {0}", ex);
+                LOGGER.log(Level.WARNING, "Erro fechando thread {0}", ex);
             }
             toTerminate.finish();
         }
@@ -120,7 +120,7 @@ public class Servidor implements Runnable {
             Thread a = new Thread(this);
             a.start();
         } else {
-            Logger.getGlobal().log(Level.WARNING, "Tentativa de iniciar Thread já iniciada");
+            LOGGER.log(Level.WARNING, "Tentativa de iniciar Thread já iniciada");
         }
     }
     
@@ -130,7 +130,7 @@ public class Servidor implements Runnable {
                 if (clientes[i].conectado())
                     clientes[i].close();
             } catch (IOException ex) {
-                Logger.getGlobal().log(Level.SEVERE, null, ex);
+                LOGGER.log(Level.SEVERE, null, ex);
             }
         executando = false;
     }
@@ -145,12 +145,11 @@ public class Servidor implements Runnable {
                 numClientes++;
             }
             catch(IOException ex) {
-                Logger.getGlobal().log(Level.SEVERE, null, ex);
+                LOGGER.log(Level.SEVERE, null, ex);
             }
         }
         else {
-            Logger.getGlobal()
-                    .log(Level.WARNING, "Cliente recusado: limite de {0} usuarios atingido", clientes.length);
+            LOGGER.log(Level.WARNING, "Cliente recusado: limite de {0} usuarios atingido", clientes.length);
         }
     }
     
@@ -168,7 +167,7 @@ public class Servidor implements Runnable {
         if (acharCliente(idCliente) > 0)
             clientes[acharCliente(idCliente)].enviar(new Mensagem(tipo, remetente, mensagem, destinatario));
         else
-            Logger.getGlobal().log(Level.WARNING, "Falha ao enviar mensagem ao cliente {0}", idCliente);
+            LOGGER.log(Level.WARNING, "Falha ao enviar mensagem ao cliente {0}", idCliente);
     }
     
     private void lidarLogin(Mensagem msg, int ID) {
@@ -192,7 +191,7 @@ public class Servidor implements Runnable {
             clientes[acharCliente(ID)].enviar(
                     new Mensagem(Mensagem.Tipos.LOGIN, SERVIDOR, "FALSE", msg.remetente)
             );
-            Logger.getGlobal().log(Level.WARNING, "Cliente tentando fazer login já estando logado");
+            LOGGER.log(Level.WARNING, "Cliente tentando fazer login já estando logado");
         }
     }
     
@@ -242,7 +241,7 @@ public class Servidor implements Runnable {
             case ANUNCIAR_SAIDA_USUARIO: // idem
             default:
                 // não seria ao acaso que isso aconteceria, seja la quem fez isso não deve permanecer
-                Logger.getGlobal().log(Level.SEVERE, "Tipo de mensagem não suportado");
+                LOGGER.log(Level.SEVERE, "Tipo de mensagem não suportado");
                 remover(ID);  
                 break;
         }
