@@ -40,7 +40,6 @@ public class Servidor implements Runnable {
     private boolean executando;
     
     private ServerSocket server = null;
-    private Thread thread = null;
     public int numClientes = 0, 
                port = 13000;
     private BancoDeDados db;
@@ -49,6 +48,7 @@ public class Servidor implements Runnable {
     public static final String ARQUIVO_BD = "usuarios.xml";
     private static final String SERVIDOR = "SERVIDOR";
     private static final String TODOS = "";
+    private static final String IGNORADO = "";
     
     public Servidor(int threads) {
         if (threads > MAX_THREADS)
@@ -94,6 +94,7 @@ public class Servidor implements Runnable {
         return 0;
     }
     
+    // TODO: usar ArrayList ao inves dessa gambiarra de reordenamento de um array simples
     public synchronized void remover(int ID) {
         int pos = acharCliente(ID);
         if (pos >= 0) {
@@ -135,7 +136,6 @@ public class Servidor implements Runnable {
         executando = false;
     }
     
-    
     private void addThread(Socket socket) {
         if (numClientes < clientes.length) {
             clientes[numClientes] = new ThreadCliente(this, socket);
@@ -153,9 +153,18 @@ public class Servidor implements Runnable {
         }
     }
     
-    private ThreadCliente acharUserThread(String usr) {
+    private ThreadCliente acharThreadUsuario(String usuario) {
         for (int i = 0; i < numClientes; i++) {
-            if (clientes[i].nome.equals(usr)) {
+            if (clientes[i].usuario.equals(usuario)) {
+                return clientes[i];
+            }
+        }
+        return null;
+    }
+    
+    private ThreadCliente acharThreadUsuario(int ID) {
+        for (int i = 0; i < numClientes; i++) {
+            if (clientes[i].ID == ID) {
                 return clientes[i];
             }
         }
@@ -171,27 +180,24 @@ public class Servidor implements Runnable {
     }
     
     private void lidarLogin(Mensagem msg, int ID) {
-        if (acharUserThread(msg.remetente) == null) {
-            // add: verificar se a senha é nula (login convidado)
+        if (acharThreadUsuario(msg.remetente) == null) {
             if (db.checarLogin(msg.remetente, msg.conteudo) || msg.conteudo.equals("")) {
-                    clientes[acharCliente(ID)].nome = msg.remetente;
+                    clientes[acharCliente(ID)].usuario = msg.remetente;
                     enviarMensagem(ID, Mensagem.Tipos.LOGIN, SERVIDOR, Mensagem.Resp.LOGIN_OK, msg.remetente);
-                    //clientes[acharCliente(ID)].send(
-                    //       new Mensagem(Mensagem.Tipos.LOGIN, SERVIDOR, "TRUE", msg.remetente)
-                    //);
-                    enviarParaTodos(Mensagem.Tipos.ANUNCIAR_NOVO_USUARIO, SERVIDOR, msg.remetente);
+                    anunciarEntradaUsuario(msg.remetente);
                     enviarListaUsuarios(msg.remetente);
-            } else {
-                clientes[acharCliente(ID)].enviar(
-                        new Mensagem(Mensagem.Tipos.LOGIN, SERVIDOR, "FALSE", msg.remetente)
-                );
+                    return;
             }
-            
-        } else {
-            clientes[acharCliente(ID)].enviar(
-                    new Mensagem(Mensagem.Tipos.LOGIN, SERVIDOR, "FALSE", msg.remetente)
-            );
-            LOGGER.log(Level.WARNING, "Cliente tentando fazer login já estando logado");
+        }
+        enviarMensagem(ID, Mensagem.Tipos.LOGIN, SERVIDOR, Mensagem.Resp.LOGIN_FAIL, msg.remetente);
+    }
+
+    private void lidarLogout(int ID) {
+        remover(ID);
+        try {
+            anunciarSaidaUsuario(acharThreadUsuario(ID).usuario);
+        } catch (NullPointerException ex) {
+            LOGGER.log(Level.WARNING, "usuario não encontrado para anunciar logout", ex.toString());
         }
     }
     
@@ -201,23 +207,22 @@ public class Servidor implements Runnable {
             clientes[i].enviar(a_enviar);
         }
     }
-    
-    private void enviarMsgEntradaUsuario(String nome) {
-        
+
+    private void anunciarEntradaUsuario(String remetente) {
+        enviarParaTodos(Mensagem.Tipos.ANUNCIAR_LOGIN, SERVIDOR, remetente);
     }
     
-    private void enviarMsgSaidaUsuario(String nome) {
-        
+    private void anunciarSaidaUsuario(String remetente) {
+        enviarParaTodos(Mensagem.Tipos.ANUNCIAR_LOGOUT, SERVIDOR, remetente);
     }
     
     private void enviarListaUsuarios(String destino) {
         for (int i = 0; i <numClientes; i++) {
-            acharUserThread(destino).enviar(
-                    new Mensagem(Mensagem.Tipos.ANUNCIAR_NOVO_USUARIO, "SERVER", clientes[i].nome, destino)
-            );
+            enviarMensagem(i, Mensagem.Tipos.LISTA_USUARIOS, SERVIDOR, clientes[i].usuario, destino);
         }
     }
     
+    // chamado pela thread do cliente
     public void lidar(int ID, Mensagem msg) {
         switch (msg.tipo()) {
             case MENSAGEM:
@@ -226,6 +231,7 @@ public class Servidor implements Runnable {
                 lidarLogin(msg, ID);
                 break;
             case LOGOUT:
+                lidarLogout(ID);
                 break;
             case PEDIR_TRANSFERENCIA:
                 break;
@@ -236,9 +242,9 @@ public class Servidor implements Runnable {
             case TESTE:
                 remover(ID);
                 break;
-            case RESULT_NOVO_USUARIO:    // não deve ser enviado pro servidor
-            case ANUNCIAR_NOVO_USUARIO:  // idem
-            case ANUNCIAR_SAIDA_USUARIO: // idem
+            case RESULT_REGISTRAR_USUARIO:    // não deve ser enviado pro servidor
+            case ANUNCIAR_LOGIN:  // idem
+            case ANUNCIAR_LOGOUT: // idem
             default:
                 // não seria ao acaso que isso aconteceria, seja la quem fez isso não deve permanecer
                 LOGGER.log(Level.SEVERE, "Tipo de mensagem não suportado");
