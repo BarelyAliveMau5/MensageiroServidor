@@ -36,11 +36,11 @@ import mensageiro.socket.Mensagem;
  */
 public class ThreadCliente extends Thread {
     private static final Logger LOGGER = Logger.getLogger(ThreadCliente.class.getName());
-    private static int idIncremental;
+    private static int idIncremental;  // desambiguador
     public Servidor server = null;
     public Socket socket = null;
     public int ID = -1;
-    public String nome = "";
+    public String usuario = "";
     public ObjectInputStream entrada  =  null;
     public ObjectOutputStream saida = null;
     private boolean executando = true;
@@ -49,8 +49,7 @@ public class ThreadCliente extends Thread {
         super();
         this.server = server;
         this.socket = socket;
-        idIncremental++;
-        ID = idIncremental;
+        ID = ++idIncremental;  // forma simplificada de: idIncremental += 1; ID = idIncremental;
     }
 
     public void enviar(Mensagem msg) {
@@ -59,7 +58,7 @@ public class ThreadCliente extends Thread {
             saida.flush();
         }
         catch (IOException ex) {
-            LOGGER.log(Level.SEVERE, null, ex);
+            LOGGER.severe(ex.toString());
         }
     }
 
@@ -85,7 +84,7 @@ public class ThreadCliente extends Thread {
                 server.remover(ID);
                 finish();
             } catch (ClassNotFoundException ex) {
-                LOGGER.log(Level.SEVERE, null, ex);
+                LOGGER.severe(ex.toString());
             }
         }
     }
