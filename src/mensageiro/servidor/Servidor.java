@@ -171,15 +171,41 @@ public class Servidor implements Runnable {
         return null;
     }
 
-    private void enviarMensagem(int idCliente, Mensagem.Tipos tipo, String remetente, String mensagem, 
+    private void enviarMensagem(int idDestino, Mensagem.Tipos tipo, String remetente, String mensagem, 
                                 String destinatario) {
-        if (acharCliente(idCliente) > 0)
-            clientes[acharCliente(idCliente)].enviar(new Mensagem(tipo, remetente, mensagem, destinatario));
+        if (acharCliente(idDestino) > 0)
+            clientes[acharCliente(idDestino)].enviar(new Mensagem(tipo, remetente, mensagem, destinatario));
         else
-            LOGGER.log(Level.WARNING, "Falha ao enviar mensagem ao cliente {0}", idCliente);
+            LOGGER.log(Level.WARNING, "Falha ao enviar mensagem ao cliente {0}", idDestino);
+    }
+
+    private void enviarParaTodos(Mensagem.Tipos tipo,String remetente, String msg) {
+        Mensagem a_enviar = new Mensagem(tipo, remetente, msg, TODOS);
+        for (int i = 0; i < numClientes; i++) {
+            clientes[i].enviar(a_enviar);
+        }
+    }
+
+    private void anunciarEntradaUsuario(String remetente) {
+        enviarParaTodos(Mensagem.Tipos.ANUNCIAR_LOGIN, SERVIDOR, remetente);
     }
     
-    private void lidarLogin(Mensagem msg, int ID) {
+    private void anunciarSaidaUsuario(String remetente) {
+        enviarParaTodos(Mensagem.Tipos.ANUNCIAR_LOGOUT, SERVIDOR, remetente);
+    }
+    
+    private void enviarListaUsuarios(String destino) {
+        try {
+            int idDestino = acharThreadUsuario(destino).ID;
+            for (int i = 0; i <numClientes; i++) {
+                enviarMensagem(idDestino, Mensagem.Tipos.LISTA_USUARIOS, SERVIDOR, clientes[i].usuario, destino);
+            }
+        } catch (NullPointerException ex) {
+            LOGGER.log(Level.WARNING, "usuario não encontrado para enviar lista de usuarios", ex.toString());
+        }
+    }
+        
+    private void lidarLogin(int ID, Mensagem msg) {
         if (acharThreadUsuario(msg.remetente) == null) {
             if (db.checarLogin(msg.remetente, msg.conteudo) || msg.conteudo.equals("")) {
                     clientes[acharCliente(ID)].usuario = msg.remetente;
@@ -202,32 +228,30 @@ public class Servidor implements Runnable {
     }
     
     private void lidarTransferencias(int ID, Mensagem msg) {
-        String usuario = acharThreadUsuario(ID).usuario;
-        if (msg.destinatario.equals("") ||  msg.destinatario.equals(SERVIDOR) || 
-                acharThreadUsuario(msg.destinatario) == null)
-            LOGGER.warning("transferencia com destinatario invalido");
-        else
-            enviarMensagem(ID, msg.tipo(), usuario, msg.conteudo, msg.destinatario);
-    }
-
-    private void enviarParaTodos(Mensagem.Tipos tipo,String remetente, String msg) {
-        Mensagem a_enviar = new Mensagem(tipo, remetente, msg, TODOS);
-        for (int i = 0; i < numClientes; i++) {
-            clientes[i].enviar(a_enviar);
+        try {
+            String usuario = acharThreadUsuario(ID).usuario;
+            int idDestino = acharThreadUsuario(msg.destinatario).getID();
+            if (msg.destinatario.equals("") ||  msg.destinatario.equals(SERVIDOR) || 
+                    acharThreadUsuario(msg.destinatario) == null)
+                LOGGER.warning("transferencia com destinatario invalido");
+            else
+                enviarMensagem(idDestino, msg.tipo(), usuario, msg.conteudo, msg.destinatario);
+        } catch (NullPointerException ex) {
+            LOGGER.warning("usuario não encontrado");
         }
     }
-
-    private void anunciarEntradaUsuario(String remetente) {
-        enviarParaTodos(Mensagem.Tipos.ANUNCIAR_LOGIN, SERVIDOR, remetente);
-    }
     
-    private void anunciarSaidaUsuario(String remetente) {
-        enviarParaTodos(Mensagem.Tipos.ANUNCIAR_LOGOUT, SERVIDOR, remetente);
-    }
-    
-    private void enviarListaUsuarios(String destino) {
-        for (int i = 0; i <numClientes; i++) {
-            enviarMensagem(i, Mensagem.Tipos.LISTA_USUARIOS, SERVIDOR, clientes[i].usuario, destino);
+    private void lidarMensagem(int ID, Mensagem msg) {
+        try {
+            String usuario = acharThreadUsuario(ID).usuario;
+            if (msg.destinatario.equals(TODOS)) {
+                enviarParaTodos(msg.tipo(), usuario, TODOS);
+            } else {
+                int idDestino = acharThreadUsuario(msg.destinatario).getID();
+                enviarMensagem(idDestino, msg.tipo(), usuario, msg.destinatario, msg.conteudo);
+            }
+        } catch (NullPointerException ex) {
+            LOGGER.warning("usuario não encontrado");
         }
     }
     
@@ -235,9 +259,10 @@ public class Servidor implements Runnable {
     public void lidar(int ID, Mensagem msg) {
         switch (msg.tipo()) {
             case MENSAGEM:
+                lidarMensagem(ID, msg);
                 break;
             case LOGIN:
-                lidarLogin(msg, ID);
+                lidarLogin(ID, msg);
                 break;
             case LOGOUT:
                 lidarLogout(ID);
