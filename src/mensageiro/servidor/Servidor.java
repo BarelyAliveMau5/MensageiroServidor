@@ -189,7 +189,7 @@ public class Servidor implements Runnable {
                     return;
             }
         }
-        enviarMensagem(ID, Mensagem.Tipos.LOGIN, SERVIDOR, Mensagem.Resp.LOGIN_FAIL, msg.remetente);
+        enviarMensagem(ID, Mensagem.Tipos.LOGIN, SERVIDOR, Mensagem.Resp.LOGIN_FALHO, msg.remetente);
     }
 
     private void lidarLogout(int ID) {
@@ -201,6 +201,15 @@ public class Servidor implements Runnable {
         }
     }
     
+    private void lidarTransferencias(int ID, Mensagem msg) {
+        String usuario = acharThreadUsuario(ID).usuario;
+        if (msg.destinatario.equals("") ||  msg.destinatario.equals(SERVIDOR) || 
+                acharThreadUsuario(msg.destinatario) == null)
+            LOGGER.warning("transferencia com destinatario invalido");
+        else
+            enviarMensagem(ID, msg.tipo(), usuario, msg.conteudo, msg.destinatario);
+    }
+
     private void enviarParaTodos(Mensagem.Tipos tipo,String remetente, String msg) {
         Mensagem a_enviar = new Mensagem(tipo, remetente, msg, TODOS);
         for (int i = 0; i < numClientes; i++) {
@@ -234,21 +243,22 @@ public class Servidor implements Runnable {
                 lidarLogout(ID);
                 break;
             case PEDIR_TRANSFERENCIA:
+                lidarTransferencias(ID, msg);
                 break;
-            case TRANSFERIR:
+            case RESP_TRANSFERENCIA:
+                lidarTransferencias(ID, msg);
                 break;
             case REGISTRAR_USUARIO:
                 break;
             case TESTE:
                 remover(ID);
                 break;
-            case RESULT_REGISTRAR_USUARIO:    // não deve ser enviado pro servidor
-            case ANUNCIAR_LOGIN:  // idem
-            case ANUNCIAR_LOGOUT: // idem
+            case LISTA_USUARIOS:
+            case ANUNCIAR_LOGIN:
+            case ANUNCIAR_LOGOUT:
             default:
-                // não seria ao acaso que isso aconteceria, seja la quem fez isso não deve permanecer
-                LOGGER.log(Level.SEVERE, "Tipo de mensagem não suportado");
-                remover(ID);  
+                LOGGER.log(Level.SEVERE, "Tipo de mensagem não suportada");
+                remover(ID);  // desconectar seja lá quem tenha feito esse cliente customizado
                 break;
         }
     }
