@@ -37,12 +37,12 @@ import mensageiro.socket.Mensagem;
 public class ThreadCliente extends Thread {
     private static final Logger LOGGER = Logger.getLogger(ThreadCliente.class.getName());
     private static int idIncremental;  // desambiguador
-    public Servidor server = null;
+    private Servidor server = null;
     public Socket socket = null;
-    public int ID = -1;
+    private int ID = -1;
     public String usuario = "";
-    public ObjectInputStream entrada  =  null;
-    public ObjectOutputStream saida = null;
+    private ObjectInputStream entrada  =  null;
+    private ObjectOutputStream saida = null;
     private boolean executando = true;
 
     public ThreadCliente(Servidor server, Socket socket) {
@@ -61,7 +61,7 @@ public class ThreadCliente extends Thread {
             LOGGER.severe(ex.toString());
         }
     }
-
+    
     public int getID() {
         return ID;
     }
