@@ -164,7 +164,7 @@ public class Servidor implements Runnable {
     
     private ThreadCliente acharThreadUsuario(int ID) {
         for (int i = 0; i < numClientes; i++) {
-            if (clientes[i].ID == ID) {
+            if (clientes[i].getID() == ID) {
                 return clientes[i];
             }
         }
@@ -196,7 +196,7 @@ public class Servidor implements Runnable {
     
     private void enviarListaUsuarios(String destino) {
         try {
-            int idDestino = acharThreadUsuario(destino).ID;
+            int idDestino = acharThreadUsuario(destino).getID();
             for (int i = 0; i <numClientes; i++) {
                 enviarMensagem(idDestino, Mensagem.Tipos.LISTA_USUARIOS, SERVIDOR, clientes[i].usuario, destino);
             }
@@ -227,7 +227,26 @@ public class Servidor implements Runnable {
         }
     }
     
-    private void lidarTransferencias(int ID, Mensagem msg) {
+    private void lidarRespTransf(int ID, Mensagem msg) {
+        try {
+            String usuario = acharThreadUsuario(ID).usuario;
+            int idDestino = acharThreadUsuario(msg.destinatario).getID();
+            if (msg.destinatario.equals("") ||  msg.destinatario.equals(SERVIDOR) || 
+                    acharThreadUsuario(msg.destinatario) == null)
+                LOGGER.warning("transferencia com destinatario invalido");
+            else {
+                if (msg.conteudo.equals(Mensagem.Resp.TRANSFERENCIA_OK)); {
+                    // problema: só funciona em rede interna.
+                    String IP = acharThreadUsuario(msg.remetente).socket.getInetAddress().getHostAddress();
+                    enviarMensagem(idDestino, msg.tipo(), usuario, IP, msg.destinatario);
+                }
+            }
+        } catch (NullPointerException ex) {
+            LOGGER.warning("usuario não encontrado");
+        }
+    }
+    
+    private void lidarPedidoTransf(int ID, Mensagem msg) {
         try {
             String usuario = acharThreadUsuario(ID).usuario;
             int idDestino = acharThreadUsuario(msg.destinatario).getID();
@@ -235,7 +254,7 @@ public class Servidor implements Runnable {
                     acharThreadUsuario(msg.destinatario) == null)
                 LOGGER.warning("transferencia com destinatario invalido");
             else
-                enviarMensagem(idDestino, msg.tipo(), usuario, msg.conteudo, msg.destinatario);
+                enviarMensagem(idDestino, msg.tipo(), usuario, "", msg.destinatario);
         } catch (NullPointerException ex) {
             LOGGER.warning("usuario não encontrado");
         }
@@ -268,10 +287,10 @@ public class Servidor implements Runnable {
                 lidarLogout(ID);
                 break;
             case PEDIR_TRANSFERENCIA:
-                lidarTransferencias(ID, msg);
+                lidarPedidoTransf(ID, msg);
                 break;
             case RESP_TRANSFERENCIA:
-                lidarTransferencias(ID, msg);
+                lidarRespTransf(ID, msg);
                 break;
             case REGISTRAR_USUARIO:
                 break;
