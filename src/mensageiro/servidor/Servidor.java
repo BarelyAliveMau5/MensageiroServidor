@@ -200,6 +200,7 @@ public class Servidor implements Runnable {
             for (int i = 0; i <numClientes; i++) {
                 enviarMensagem(idDestino, Mensagem.Tipos.LISTA_USUARIOS, SERVIDOR, clientes[i].usuario, destino);
             }
+            enviarMensagem(idDestino, Mensagem.Tipos.FIM_LISTA_USUARIOS, SERVIDOR, IGNORADO, destino);
         } catch (NullPointerException ex) {
             LOGGER.log(Level.WARNING, "usuario não encontrado para enviar lista de usuarios", ex.toString());
         }
