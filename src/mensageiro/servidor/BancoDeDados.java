@@ -83,10 +83,8 @@ public class BancoDeDados {
                     }
                 }
             }
-            throw new Exception("Usuario existe mas não pode ser verificado");
+            Logger.getLogger(BancoDeDados.class.getName()).log(Level.WARNING, "usuario não pôde ser verificado");
         } catch (IOException | ParserConfigurationException | SAXException ex) {
-            Logger.getLogger(BancoDeDados.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (Exception ex) {
             Logger.getLogger(BancoDeDados.class.getName()).log(Level.SEVERE, null, ex);
         }
         return false;
