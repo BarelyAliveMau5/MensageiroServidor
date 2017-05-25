@@ -91,7 +91,7 @@ public class Servidor implements Runnable {
                 return i;
             }
         }
-        return 0;
+        return -1;
     }
     
     // TODO: usar ArrayList ao inves dessa gambiarra de reordenamento de um array simples
@@ -173,7 +173,7 @@ public class Servidor implements Runnable {
 
     private void enviarMensagem(int idDestino, Mensagem.Tipos tipo, String remetente, String mensagem, 
                                 String destinatario) {
-        if (acharCliente(idDestino) > 0)
+        if (acharCliente(idDestino) >= 0)
             clientes[acharCliente(idDestino)].enviar(new Mensagem(tipo, remetente, mensagem, destinatario));
         else
             LOGGER.log(Level.WARNING, "Falha ao enviar mensagem ao cliente {0}", idDestino);
