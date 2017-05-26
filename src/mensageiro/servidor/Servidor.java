@@ -286,6 +286,7 @@ public class Servidor implements Runnable {
                 lidarLogin(ID, msg);
                 break;
             case LOGOUT:
+                anunciarSaidaUsuario(acharThreadUsuario(ID).usuario);
                 lidarLogout(ID);
                 break;
             case PEDIR_TRANSFERENCIA:
