@@ -82,6 +82,7 @@ public class ThreadCliente extends Thread {
             catch(IOException ex) {
                 LOGGER.log(Level.WARNING, ex.toString());
                 server.remover(ID);
+                server.saidaErro(usuario);
                 finish();
             } catch (ClassNotFoundException ex) {
                 LOGGER.severe(ex.toString());
@@ -101,14 +102,15 @@ public class ThreadCliente extends Thread {
     }
     
     public void close() throws IOException {
+        if (saida != null)
+            saida.close();
+        
         if (socket != null)
             socket.close();
 
         if (entrada != null)
             entrada.close();
 
-        if (saida != null)
-            saida.close();
     }
     
 }

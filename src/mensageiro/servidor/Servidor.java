@@ -94,6 +94,10 @@ public class Servidor implements Runnable {
         return -1;
     }
     
+    public void saidaErro(String usuario) {
+        anunciarSaidaUsuario(usuario);
+    }
+    
     // TODO: usar ArrayList ao inves dessa gambiarra de reordenamento de um array simples
     public synchronized void remover(int ID) {
         int pos = acharCliente(ID);
@@ -268,7 +272,7 @@ public class Servidor implements Runnable {
                 enviarParaTodos(msg.tipo(), usuario, msg.conteudo);
             } else {
                 int idDestino = acharThreadUsuario(msg.destinatario).getID();
-                enviarMensagem(idDestino, msg.tipo(), usuario, msg.destinatario, msg.conteudo);
+                enviarMensagem(idDestino, msg.tipo(), usuario, msg.conteudo, msg.destinatario);
                 LOGGER.info(msg.conteudo);
             }
         } catch (NullPointerException ex) {
