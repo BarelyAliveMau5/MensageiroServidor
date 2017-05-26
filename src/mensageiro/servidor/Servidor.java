@@ -265,10 +265,11 @@ public class Servidor implements Runnable {
         try {
             String usuario = acharThreadUsuario(ID).usuario;
             if (msg.destinatario.equals(TODOS)) {
-                enviarParaTodos(msg.tipo(), usuario, TODOS);
+                enviarParaTodos(msg.tipo(), usuario, msg.conteudo);
             } else {
                 int idDestino = acharThreadUsuario(msg.destinatario).getID();
                 enviarMensagem(idDestino, msg.tipo(), usuario, msg.destinatario, msg.conteudo);
+                LOGGER.info(msg.conteudo);
             }
         } catch (NullPointerException ex) {
             LOGGER.warning("usuario não encontrado");
