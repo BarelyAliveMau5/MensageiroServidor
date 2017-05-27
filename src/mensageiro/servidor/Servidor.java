@@ -28,8 +28,6 @@ import java.net.BindException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import mensageiro.socket.Mensagem;
@@ -38,8 +36,7 @@ import mensageiro.socket.Mensagem;
  */
 public class Servidor implements Runnable {
     private static final Logger LOGGER = Logger.getLogger(Servidor.class.getName());
-    public static final String VERSAO = "0.0.3-alpha+" + LocalDateTime.now().format(DateTimeFormatter
-                                                                            .ofPattern("yyyyMMddHHmmss"));
+    public static final String VERSAO = "0.0.3-alpha";
     private ThreadCliente clientes[];
     private boolean executando;
     
@@ -118,7 +115,7 @@ public class Servidor implements Runnable {
                 toTerminate.close();
             }
             catch(IOException ex) {
-                LOGGER.log(Level.WARNING, "Erro fechando thread {0}", ex);
+                LOGGER.log(Level.WARNING, "Erro fechando thread:", ex.getMessage());
             }
             toTerminate.finish();
         }
