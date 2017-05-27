@@ -206,7 +206,8 @@ public class Servidor implements Runnable {
         try {
             int idDestino = acharThreadUsuario(destino).getID();
             for (int i = 0; i <numClientes; i++) {
-                enviarMensagem(idDestino, Mensagem.Tipos.LISTA_USUARIOS, SERVIDOR, clientes[i].usuario, destino);
+                if (clientes[i].getID() != idDestino)
+                    enviarMensagem(idDestino, Mensagem.Tipos.LISTA_USUARIOS, SERVIDOR, clientes[i].usuario, destino);
             }
             enviarMensagem(idDestino, Mensagem.Tipos.FIM_LISTA_USUARIOS, SERVIDOR, IGNORADO, destino);
         } catch (NullPointerException ex) {
@@ -216,12 +217,13 @@ public class Servidor implements Runnable {
         
     private void lidarLogin(int ID, Mensagem msg) {
         if (acharThreadUsuario(msg.remetente) == null) {
-            if (db.checarLogin(msg.remetente, msg.conteudo) || msg.conteudo.equals(IGNORADO)) {
-                    clientes[acharCliente(ID)].usuario = msg.remetente;
-                    enviarMensagem(ID, Mensagem.Tipos.LOGIN, SERVIDOR, Mensagem.Resp.LOGIN_OK, msg.remetente);
-                    anunciarEntradaUsuario(msg.remetente);
-                    enviarListaUsuarios(msg.remetente);
-                    return;
+            if (db.checarLogin(msg.remetente, msg.conteudo) || 
+                    (!db.usuarioExistente(msg.remetente) && msg.conteudo.equals(IGNORADO))) {
+                clientes[acharCliente(ID)].usuario = msg.remetente;
+                enviarMensagem(ID, Mensagem.Tipos.LOGIN, SERVIDOR, Mensagem.Resp.LOGIN_OK, msg.remetente);
+                anunciarEntradaUsuario(msg.remetente);
+                enviarListaUsuarios(msg.remetente);
+                return;
             }
         }
         enviarMensagem(ID, Mensagem.Tipos.LOGIN, SERVIDOR, Mensagem.Resp.LOGIN_FALHO, msg.remetente);
