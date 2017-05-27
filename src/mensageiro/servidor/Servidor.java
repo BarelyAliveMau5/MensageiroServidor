@@ -28,6 +28,8 @@ import java.net.BindException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import mensageiro.socket.Mensagem;
@@ -36,6 +38,8 @@ import mensageiro.socket.Mensagem;
  */
 public class Servidor implements Runnable {
     private static final Logger LOGGER = Logger.getLogger(Servidor.class.getName());
+    public static final String VERSAO = "0.0.3-alpha+" + LocalDateTime.now().format(DateTimeFormatter
+                                                                            .ofPattern("yyyyMMddHHmmss"));
     private ThreadCliente clientes[];
     private boolean executando;
     
@@ -59,7 +63,7 @@ public class Servidor implements Runnable {
             server = new ServerSocket(port);
             port = server.getLocalPort();
             LOGGER.log(Level.INFO, "Servidor iniciado em {0}:{1}", 
-                       new Object[] { InetAddress.getLocalHost(), server.getLocalPort() });
+                       new Object[] {InetAddress.getLocalHost(), String.valueOf(server.getLocalPort())});
             iniciar();
         } catch (BindException ex) {
             LOGGER.log(Level.SEVERE, "Porta já usada, impossivel continuar. finalizando");
@@ -212,7 +216,7 @@ public class Servidor implements Runnable {
         
     private void lidarLogin(int ID, Mensagem msg) {
         if (acharThreadUsuario(msg.remetente) == null) {
-            if (db.checarLogin(msg.remetente, msg.conteudo) || msg.conteudo.equals("")) {
+            if (db.checarLogin(msg.remetente, msg.conteudo) || msg.conteudo.equals(IGNORADO)) {
                     clientes[acharCliente(ID)].usuario = msg.remetente;
                     enviarMensagem(ID, Mensagem.Tipos.LOGIN, SERVIDOR, Mensagem.Resp.LOGIN_OK, msg.remetente);
                     anunciarEntradaUsuario(msg.remetente);
@@ -236,7 +240,7 @@ public class Servidor implements Runnable {
         try {
             String usuario = acharThreadUsuario(ID).usuario;
             int idDestino = acharThreadUsuario(msg.destinatario).getID();
-            if (msg.destinatario.equals("") ||  msg.destinatario.equals(SERVIDOR) || 
+            if (msg.destinatario.equals(IGNORADO) ||  msg.destinatario.equals(SERVIDOR) || 
                     acharThreadUsuario(msg.destinatario) == null)
                 LOGGER.warning("transferencia com destinatario invalido");
             else {
