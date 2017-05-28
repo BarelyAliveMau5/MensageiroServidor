@@ -206,7 +206,6 @@ public class Servidor implements Runnable {
                 if (clientes[i].getID() != idDestino)
                     enviarMensagem(idDestino, Mensagem.Tipos.LISTA_USUARIOS, SERVIDOR, clientes[i].usuario, destino);
             }
-            enviarMensagem(idDestino, Mensagem.Tipos.FIM_LISTA_USUARIOS, SERVIDOR, IGNORADO, destino);
         } catch (NullPointerException ex) {
             LOGGER.log(Level.WARNING, "usuario não encontrado para enviar lista de usuarios", ex.toString());
         }
@@ -243,10 +242,12 @@ public class Servidor implements Runnable {
                     acharThreadUsuario(msg.destinatario) == null)
                 LOGGER.warning("transferencia com destinatario invalido");
             else {
-                if (msg.conteudo.equals(Mensagem.Resp.TRANSFERENCIA_OK)); {
+                if (!msg.conteudo.equals(Mensagem.Resp.TRANSFERENCIA_NEGADA)) {
                     // problema: só funciona em rede interna.
-                    String IP = acharThreadUsuario(msg.remetente).socket.getInetAddress().getHostAddress();
-                    enviarMensagem(idDestino, msg.tipo(), usuario, IP, msg.destinatario);
+                    String IP = acharThreadUsuario(usuario).socket.getInetAddress().getHostAddress();
+                    enviarMensagem(idDestino, msg.tipo(), usuario, IP + ":" + msg.conteudo, msg.destinatario);
+                } else {
+                    enviarMensagem(idDestino, msg.tipo(), SERVIDOR, IGNORADO, msg.destinatario);
                 }
             }
         } catch (NullPointerException ex) {
@@ -262,7 +263,7 @@ public class Servidor implements Runnable {
                     acharThreadUsuario(msg.destinatario) == null)
                 LOGGER.warning("transferencia com destinatario invalido");
             else
-                enviarMensagem(idDestino, msg.tipo(), usuario, "", msg.destinatario);
+                enviarMensagem(idDestino, msg.tipo(), usuario, msg.conteudo, msg.destinatario);
         } catch (NullPointerException ex) {
             LOGGER.warning("usuario não encontrado");
         }
@@ -296,7 +297,7 @@ public class Servidor implements Runnable {
                 anunciarSaidaUsuario(acharThreadUsuario(ID).usuario);
                 lidarLogout(ID);
                 break;
-            case PEDIR_TRANSFERENCIA:
+            case PEDIDO_TRANSFERENCIA:
                 lidarPedidoTransf(ID, msg);
                 break;
             case RESP_TRANSFERENCIA:
